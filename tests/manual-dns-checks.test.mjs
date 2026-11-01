@@ -38,7 +38,8 @@ function answerDns(answers) {
 		const name = parsed.searchParams.get("name");
 		asked.push(name);
 		const data = answers[`${name}|${parsed.searchParams.get("type")}`];
-		return Response.json(data === undefined ? { Status: 3 } : { Status: 0, Answer: data.map((value) => ({ name, type: 0, TTL: 60, data: value })) });
+		const type = { A: 1, AAAA: 28, CNAME: 5, MX: 15, TXT: 16 }[parsed.searchParams.get("type")];
+		return Response.json(data === undefined ? { Status: 3 } : { Status: 0, Answer: data.map((value) => ({ name, type, TTL: 60, data: value })) });
 	};
 	return asked;
 }

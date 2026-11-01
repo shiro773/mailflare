@@ -14,6 +14,7 @@ type DohResponse = {
 
 const DOH_ENDPOINT = "https://cloudflare-dns.com/dns-query";
 const DOH_TIMEOUT_MS = 5000;
+const DNS_RECORD_TYPES: Record<DnsQueryType, number> = { MX: 15, TXT: 16, A: 1, AAAA: 28, CNAME: 5 };
 
 function decodeTxt(data: string): string {
 	const chunks = data.match(/"([^"]*)"/g);
@@ -45,7 +46,9 @@ export async function queryDns(name: string, type: DnsQueryType): Promise<string
 		if (json.Status !== 0 && json.Status !== 3) {
 			throw new Error(`DNS query for ${name} ${type} returned status ${json.Status}`);
 		}
-		return (json.Answer ?? []).map((answer) =>
+		// Recursive answers can include CNAMEs alongside the requested records.
+		// Do not return alias hostnames as addresses to callers checking public IPs.
+		return (json.Answer ?? []).filter((answer) => answer.type === DNS_RECORD_TYPES[type]).map((answer) =>
 			type === "TXT" ? decodeTxt(answer.data) : answer.data,
 		);
 	} finally {
